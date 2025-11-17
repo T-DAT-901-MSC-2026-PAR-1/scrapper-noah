@@ -1,0 +1,29 @@
+services:
+  scrapper-dev:
+    profiles: [development]
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.dev
+    container_name: scrapper-noah-dev
+    volumes:
+      # Mount source code for hot-reloading
+      - ..:/app
+      # Use named volume for node_modules to avoid conflicts
+      - node_modules:/app/node_modules
+    env_file:
+      - ../.env
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=DEBUG
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - kafka_default
+
+volumes:
+  node_modules:
+
+networks:
+  kafka_default:
+    external: true

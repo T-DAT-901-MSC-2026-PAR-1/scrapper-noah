@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install development tools
+RUN apk add --no-cache \
+    tini \
+    bash
+
+# Copy package files first for better layer caching
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm ci
+
+# Copy TypeScript config
+COPY tsconfig.json ./
+
+# Make entrypoint script executable (will be mounted or copied later)
+# Source code will be mounted as a volume for hot-reload
+
+# Use tini to handle signals properly
+ENTRYPOINT ["/sbin/tini", "--", "/bin/bash", "/app/docker/entrypoint.dev.sh"]
