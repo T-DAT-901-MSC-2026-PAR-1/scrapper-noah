@@ -10,7 +10,7 @@ export class KafkaProducerManager {
 
   constructor() {
     this.kafka = new Kafka({
-      clientId: 'scrapper-raw-trades-eth-usdt',
+      clientId: `scrapper-raw-trades-${process.env.BASE_CRYPTO?.toLowerCase() || 'eth'}-usdt`,
       brokers: KAFKA_BROKERS,
       logLevel: logLevel.ERROR,
       retry: {

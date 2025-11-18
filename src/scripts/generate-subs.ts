@@ -40,17 +40,42 @@ if (fs.existsSync(envPath)) {
     envContent = readFileSync(envPath, 'utf8');
 }
 
-const envKey = 'ENCODED_SUBSCRIPTIONS';
-const regex = new RegExp(`^${envKey}=.*$`, 'm');
+const envKeySub = 'ENCODED_SUBSCRIPTIONS';
+const regexSub = new RegExp(`^${envKeySub}=.*$`, 'm');
 
-if (regex.test(envContent)) {
-    envContent = envContent.replace(regex, `${envKey}=${encoded}`);
+if (regexSub.test(envContent)) {
+    envContent = envContent.replace(regexSub, `${envKeySub}=${encoded}`);
 } else {
-    envContent += `\n${envKey}=${encoded}\n`;
+    envContent += `\n${envKeySub}=${encoded}\n`;
+}
+
+writeFileSync(envPath, envContent.trim() + '\n');
+
+const envKeyBaseCrypto = 'BASE_CRYPTO';
+const regexBaseCrypto = new RegExp(`^${envKeyBaseCrypto}=.*$`, 'm');
+
+if (regexBaseCrypto.test(envContent)) {
+    envContent = envContent.replace(regexBaseCrypto, `${envKeyBaseCrypto}=${base.toLowerCase()}`);
+} else {
+    envContent += `\n${envKeyBaseCrypto}=${base.toLowerCase()}\n`;
+}
+
+writeFileSync(envPath, envContent.trim() + '\n');
+
+const envKeyKafkaTopic = 'KAFKA_TOPIC';
+const kafkaTopicValue = `raw-trades-${base.toLowerCase()}-${quote.toLowerCase()}`;
+const regexKafkaTopic = new RegExp(`^${envKeyKafkaTopic}=.*$`, 'm');
+
+if (regexKafkaTopic.test(envContent)) {
+    envContent = envContent.replace(regexKafkaTopic, `${envKeyKafkaTopic}=${kafkaTopicValue}`);
+} else {
+    envContent += `\n${envKeyKafkaTopic}=${kafkaTopicValue}\n`;
 }
 
 writeFileSync(envPath, envContent.trim() + '\n');
 
 console.log(`✓ Subscriptions générées pour ${base}/${quote}`);
 console.log(`✓ ${subscriptions.length} exchanges encodés en base64`);
-console.log(`✓ Variable ${envKey} mise à jour dans .env`);
+console.log(`✓ Variable ${envKeySub} mise à jour dans .env`);
+console.log(`✓ Variable ${envKeyBaseCrypto} mise à jour dans .env`);
+console.log(`✓ Variable ${envKeyKafkaTopic} mise à jour dans .env avec la valeur: ${kafkaTopicValue}`);
