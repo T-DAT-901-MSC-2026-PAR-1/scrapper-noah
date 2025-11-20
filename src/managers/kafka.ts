@@ -21,7 +21,7 @@ export class KafkaProducerManager {
     });
 
     this.producer = this.kafka.producer({
-      allowAutoTopicCreation: true,
+      allowAutoTopicCreation: false,
       transactionTimeout: 30000,
     });
   }
@@ -31,6 +31,8 @@ export class KafkaProducerManager {
       await this.producer.connect();
       this.isConnected = true;
       console.log(`[${new Date().toISOString()}] Kafka producer connected to ${KAFKA_BROKERS.join(', ')}`);
+
+      await this.ensureTopicExists();
       console.log(`[${new Date().toISOString()}] Publishing to topic: ${KAFKA_TOPIC}`);
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Failed to connect to Kafka:`, error);
@@ -45,15 +47,18 @@ export class KafkaProducerManager {
     }
 
     try {
-      await this.producer.send({
-        topic: KAFKA_TOPIC,
-        messages: [
-          {
-            value: data,
-            timestamp: Date.now().toString(),
-          },
-        ],
-      });
+      const messageStr = data.toString('utf-8')
+      if (messageStr.startsWith('0')) {
+        await this.producer.send({
+          topic: KAFKA_TOPIC,
+          messages: [
+            {
+              value: data,
+              timestamp: Date.now().toString(),
+            },
+          ],
+        });
+      }
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Failed to send message to Kafka:`, error);
     }
@@ -69,5 +74,29 @@ export class KafkaProducerManager {
         console.error(`[${new Date().toISOString()}] Error disconnecting Kafka:`, error);
       }
     }
+  }
+
+  private async ensureTopicExists(): Promise<void> {
+    const admin = this.kafka.admin();
+    try {
+      await admin.connect();
+      const topics = await admin.listTopics();
+
+      if (!topics.includes(KAFKA_TOPIC)) {
+        await admin.createTopics({
+          topics: [{
+            topic: KAFKA_TOPIC,
+            configEntries: [{ name: 'retention.ms', value: '600000' }],
+            replicationFactor: 3
+          }],
+        });
+        console.log(`[${new Date().toISOString()}] Topic ${KAFKA_TOPIC} created`);
+      }
+    } catch (e) {
+      console.log(`[${new Date().toISOString()}] Topic already exists or creation skipped`);
+    } finally {
+      await admin.disconnect();
+    }
+
   }
 }
